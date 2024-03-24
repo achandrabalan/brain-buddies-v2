@@ -41,6 +41,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Textarea } from "@/components/ui/textarea";
+
 import { Angkor } from "next/font/google";
 const angkor = Angkor({ subsets: ["khmer"], weight: "400" });
 
@@ -48,6 +50,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
+import { wordleScores } from "./utils/constants";
 
 export const description =
   "An application shell with a header and main content area. The header has a navbar, a search input and and a user nav dropdown. The user nav is toggled by a button with an avatar image.";
@@ -56,12 +60,28 @@ export const iframeHeight = "825px";
 
 export const containerClassName = "w-full h-full";
 
+interface UserScores {
+  id?: string;
+  wordle_ovr: number;
+  connections_ovr?: number;
+  daily?: string;
+  wordle_tournament: number;
+  connections_tournament?: number;
+  consecutive_wordle: number;
+  consecutive_connections?: number;
+  total_wordle: number;
+  total_connections?: number;
+  last_touch_wordle?: string;
+}
 export default function Dashboard() {
   const supabase = createClient();
   const router = useRouter();
   const [profilePicture, setProfilePicture] = useState<string | undefined>(
     undefined
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [userScore, setUserScore] = useState<UserScores>();
+  const [userId, setUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -69,6 +89,7 @@ export default function Dashboard() {
       if (error || !data?.session) {
         router.push("/login");
       }
+      setUserId(data?.session?.user?.id);
       const { data: profileData, error: pictureError } = await supabase
         .from("profiles")
         .select("profile_picture_url")
@@ -76,6 +97,14 @@ export default function Dashboard() {
         .single();
       if (!pictureError) {
         setProfilePicture(profileData?.profile_picture_url);
+      }
+      const { data: scoreData, error: scoreError } = await supabase
+        .from("scores")
+        .select("*")
+        .eq("id", data?.session?.user?.id);
+
+      if (!scoreError) {
+        setUserScore(scoreData[0]);
       }
     };
 
@@ -94,8 +123,86 @@ export default function Dashboard() {
     router.push("/login");
   };
 
+  const scoreGame = () => {
+    const game = searchQuery.split(" ")[0].split("\n")[0];
+
+    if (game === "Wordle") {
+      // send searchQuery in it's entirety to all group chats
+      const currDate = new Date().toISOString().slice(0, 10);
+      const tempDate = new Date();
+      tempDate.setDate(tempDate.getDate() - 1);
+      const dayBefore = tempDate.toISOString().slice(0, 10);
+      if (JSON.parse(localStorage.getItem("wordle2") || "{}") === currDate) {
+        toast.error("You have already scored a Wordle game today.");
+        return;
+      } else {
+        localStorage.setItem("wordle", JSON.stringify(currDate));
+        // scoring logic
+        const score =
+          wordleScores.get(searchQuery.split(" ")[2].split("\n")[0]) ?? 0;
+        const prevHistory = userScore
+          ? JSON.parse(userScore.daily || JSON.stringify([]))
+          : JSON.stringify([]);
+        const history = [
+          ...prevHistory,
+          { game: "Wordle", date: currDate, score: score },
+        ];
+        const totalWordle = userScore ? userScore.total_wordle + 1 : 1;
+        const wordle_ovr = userScore
+          ? (userScore.wordle_ovr + score) / totalWordle
+          : score;
+        const wordleTournament = userScore
+          ? userScore.wordle_tournament + score
+          : score;
+        let consecutiveWordle = userScore
+          ? userScore.consecutive_wordle + 1
+          : 1;
+        if (userScore && userScore.last_touch_wordle !== dayBefore) {
+          consecutiveWordle = 1;
+        }
+        const data = {
+          id: userId,
+          wordle_ovr: wordle_ovr,
+          wordle_tournament: wordleTournament,
+          consecutive_wordle: consecutiveWordle,
+          total_wordle: totalWordle,
+          daily: JSON.stringify(history),
+        };
+        supabase
+          .from("scores")
+          .upsert(data)
+          .then((res) => {
+            if (res.error) {
+              toast.error("Error updating score");
+              console.log(res.error);
+              return;
+            }
+            setUserScore(data);
+            toast.success("Scored Wordle game");
+          });
+      }
+    } else if (game === "Connections") {
+      // send searchQuery in it's entirety to all group chats
+      if (
+        JSON.parse(localStorage.getItem("connections") || "{}") ===
+        new Date().toISOString().slice(0, 10)
+      ) {
+        toast.error("You have already scored a Connections game today.");
+        return;
+      } else {
+        localStorage.setItem(
+          "connections",
+          JSON.stringify(new Date().toISOString().slice(0, 10))
+        );
+      }
+    } else {
+      toast.error("Unable to parse game. Please try again.");
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full flex-col">
+      <Toaster position="top-right" reverseOrder={false} />
       <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
         <nav className="hidden flex-col gap-6 w-full text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link
@@ -221,6 +328,7 @@ export default function Dashboard() {
               </p>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Connections</CardTitle>
@@ -265,7 +373,9 @@ export default function Dashboard() {
             <CardHeader className="flex flex-row items-center">
               <div className="grid gap-2">
                 <CardTitle>History</CardTitle>
-                <CardDescription>Your game entries</CardDescription>
+                <CardDescription>
+                  Your historical game performance
+                </CardDescription>
               </div>
             </CardHeader>
             <CardContent>
@@ -392,10 +502,22 @@ export default function Dashboard() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Recent Sales</CardTitle>
+              <CardTitle>Score a game</CardTitle>
+              <CardDescription>
+                Paste your Wordle or Connections shareable text here
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-8">
-              <div className="flex items-center gap-4">
+            <CardContent className="flex flex-col gap-y-[5px] -full">
+              <Textarea
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                }}
+                placeholder="Type your message here."
+              />
+
+              <Button onClick={scoreGame}>Score</Button>
+
+              {/* <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
                   <AvatarImage src={profilePicture} alt="Avatar" />
                   <AvatarFallback>OM</AvatarFallback>
@@ -469,7 +591,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="ml-auto font-medium">+$39.00</div>
-              </div>
+              </div> */}
             </CardContent>
           </Card>
         </div>
