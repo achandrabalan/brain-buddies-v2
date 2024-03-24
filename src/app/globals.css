@@ -78,3 +78,17 @@
 .angkor-font {
   font-family: "Angkor", sans-serif;
 }
+
+@keyframes blink {
+  from,
+  to {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.blink-animation {
+  animation: blink 1s step-end infinite;
+}

@@ -162,8 +162,6 @@ export default function Profile() {
 
   return (
     <>
-      <div className="flex h-[70px] justify-center items-center"></div>
-
       <form>
         <div className="flex flex-col space-y-12 items-center justify-center h-screen w-full ">
           <div className="border-b border-gray-900/10  mt-10">

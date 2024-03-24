@@ -20,7 +20,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
+
+import { Angkor } from "next/font/google";
+const angkor = Angkor({ subsets: ["khmer"], weight: "400" });
 
 export default function Login() {
   const [email, setEmail] = React.useState("");
@@ -42,26 +45,47 @@ export default function Login() {
     router.push("/");
   };
 
-  function useWindowDimensions() {
-    const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const texts = useMemo(
+    () => [
+      "Climb the leaderboard",
+      "Ruin friendships",
+      "Assemble your crew",
+      "Bragging rights await.",
+      "Track your achievements",
+      "Unseat the reigning champ",
+      "Gloat.",
+    ],
+    []
+  ); // Empty dependency array to prevent re-creation of the array
+  // State to hold the current text and its index
+  const [index, setIndex] = useState(0);
+  const [subIndex, setSubIndex] = useState(0);
+  const [reverse, setReverse] = useState(false);
 
-    useEffect(() => {
-      function updateDimensions() {
-        setDimensions({
-          width: window.innerWidth,
-          height: window.innerHeight,
-        });
-      }
+  useEffect(() => {
+    if (subIndex === texts[index].length + 1 && !reverse) {
+      // Start deleting after a longer pause
+      setTimeout(() => setReverse(true), 2000); // Hold the full sentence longer
+      return;
+    }
 
-      window.addEventListener("resize", updateDimensions);
-      updateDimensions(); // Initial setup
+    if (subIndex === 0 && reverse) {
+      setReverse(false);
+      setIndex((prevIndex) => (prevIndex + 1) % texts.length);
+      return;
+    }
 
-      return () => window.removeEventListener("resize", updateDimensions);
-    }, []);
+    const timeout = setTimeout(
+      () => {
+        setSubIndex(
+          (prevSubIndex) => prevSubIndex + (reverse ? -prevSubIndex : 1)
+        );
+      },
+      reverse ? 75 : 100
+    ); // Faster typing speed
 
-    return dimensions;
-  }
-  const { width, height } = useWindowDimensions();
+    return () => clearTimeout(timeout);
+  }, [subIndex, index, reverse, texts]);
 
   return (
     // <div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
@@ -137,73 +161,41 @@ export default function Login() {
     //   </div>
     // </div>
     <>
-      <div className="md:hidden">
-        <Image
-          src="/examples/authentication-light.png"
-          width={1280}
-          height={height}
-          alt="Authentication"
-          className="block dark:hidden"
-        />
-        <Image
-          src="/examples/authentication-dark.png"
-          width={1280}
-          height={843}
-          alt="Authentication"
-          className="hidden dark:block"
-        />
-      </div>
-      <div className="container relative hidden h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
-        <Link
-          href="/examples/authentication"
-          className="absolute right-4 top-4 md:right-8 md:top-8"
+      <div className="container relative hidden h-full flex-col overflow-hidden items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+        <Toaster position="top-right" reverseOrder={false} />
+        <div
+          className={`${angkor.className} absolute bottom-4  right-4 z-20 text-4xl flex items-center font-medium`}
         >
-          Login
-        </Link>
-        <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
-          <div className="absolute inset-0 bg-zinc-900" />
-          <div className="relative z-20 flex items-center text-lg font-medium">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mr-2 h-6 w-6"
+          Brain Buddies
+        </div>
+        <div className="relative hidden h-screen flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+          <div className="absolute w-full h-full inset-0 bg-zinc-900">
+            <h1
+              className={`${angkor.className} flex justify-center absolute w-full h-full text-center items-center  font-bold text-7xl`}
             >
-              <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
-            </svg>
-            Acme Inc
+              {`${texts[index].substring(0, subIndex)}`}
+              <span className="blink-animation">|</span>
+            </h1>
           </div>
-          <div className="relative z-20 mt-auto">
-            <blockquote className="space-y-2">
-              <p className="text-lg">
-                &ldquo;This library has saved me countless hours of work and
-                helped me deliver stunning designs to my clients faster than
-                ever before.&rdquo;
-              </p>
-              <footer className="text-sm">Sofia Davis</footer>
-            </blockquote>
-          </div>
+          {/* <div
+            className={`${angkor.className} relative z-20 text-6xl flex items-center font-medium`}
+          >
+            Brain Buddies
+          </div> */}
+
+          <div className="relative z-20 mt-auto"></div>
         </div>
         <div className="lg:p-8">
           <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
             <div className="sm:mx-auto sm:w-full sm:max-w-sm">
-              //{" "}
               <h2 className="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900">
-                // Log in to your account //{" "}
+                Log in to your account
               </h2>
-              //{" "}
             </div>
-            //{" "}
+
             <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
-              //{" "}
               <form className="space-y-6" onSubmit={handleLogin}>
-                //{" "}
                 <div>
-                  //{" "}
                   <label
                     htmlFor="email"
                     className="block text-sm font-medium leading-6 text-gray-900"
@@ -224,12 +216,23 @@ export default function Login() {
                   </div>
                 </div>
                 <div>
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium leading-6 text-gray-900"
-                  >
-                    Password
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="password"
+                      className="block text-sm font-medium leading-6 text-gray-900"
+                    >
+                      Password
+                    </label>
+                    <div className="text-sm inline-block">
+                      <a
+                        href="#"
+                        className="font-semibold text-brain hover:text-brain"
+                      >
+                        Forgot password?
+                      </a>
+                    </div>
+                  </div>
+
                   <div className="mt-2">
                     <input
                       id="password"
