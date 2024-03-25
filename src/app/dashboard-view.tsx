@@ -115,7 +115,6 @@ export default function Dashboard() {
     e.preventDefault();
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.log(error);
       toast.error("Error logging out");
       return;
     }
@@ -148,8 +147,10 @@ export default function Dashboard() {
           { game: "Wordle", date: currDate, score: score },
         ];
         const totalWordle = userScore ? userScore.total_wordle + 1 : 1;
+
         const wordle_ovr = userScore
-          ? (userScore.wordle_ovr + score) / totalWordle
+          ? (userScore.wordle_ovr * (userScore.total_wordle - 1) + score) /
+            totalWordle
           : score;
         const wordleTournament = userScore
           ? userScore.wordle_tournament + score
@@ -162,19 +163,21 @@ export default function Dashboard() {
         }
         const data = {
           id: userId,
-          wordle_ovr: wordle_ovr,
+          wordle_ovr: +wordle_ovr.toFixed(4),
           wordle_tournament: wordleTournament,
           consecutive_wordle: consecutiveWordle,
           total_wordle: totalWordle,
           daily: JSON.stringify(history),
+          last_touch_wordle: currDate,
         };
+
         supabase
           .from("scores")
           .upsert(data)
           .then((res) => {
             if (res.error) {
               toast.error("Error updating score");
-              console.log(res.error);
+
               return;
             }
             setUserScore(data);
