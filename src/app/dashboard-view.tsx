@@ -131,7 +131,7 @@ export default function Dashboard() {
       const tempDate = new Date();
       tempDate.setDate(tempDate.getDate() - 1);
       const dayBefore = tempDate.toISOString().slice(0, 10);
-      if (JSON.parse(localStorage.getItem("wordle2") || "{}") === currDate) {
+      if (JSON.parse(localStorage.getItem("wordle") || "{}") === currDate) {
         toast.error("You have already scored a Wordle game today.");
         return;
       } else {
@@ -515,7 +515,14 @@ export default function Dashboard() {
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
                 }}
-                placeholder="Type your message here."
+                placeholder={` 
+Wordle 1,009 X/6
+⬜🟨🟨⬜⬜
+⬜🟨🟨⬜⬜
+🟩⬜🟨⬜⬜
+🟩⬜🟨⬜⬜
+🟩⬜🟨⬜⬜
+🟩⬜🟨⬜⬜`}
               />
 
               <Button onClick={scoreGame}>Score</Button>
