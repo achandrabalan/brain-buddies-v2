@@ -3,6 +3,8 @@ import Link from "next/link";
 import {
   Activity,
   ArrowUpRight,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   CircleUser,
   CreditCard,
   DollarSign,
@@ -48,7 +50,7 @@ const angkor = Angkor({ subsets: ["khmer"], weight: "400" });
 
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
 import { wordleScores } from "./utils/constants";
@@ -64,7 +66,7 @@ interface UserScores {
   id?: string;
   wordle_ovr: number;
   connections_ovr?: number;
-  daily?: string;
+  daily?: any;
   wordle_tournament: number;
   connections_tournament?: number;
   consecutive_wordle: number;
@@ -82,6 +84,10 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [userScore, setUserScore] = useState<UserScores>();
   const [userId, setUserId] = useState<string | undefined>(undefined);
+  const [scoreCounter, setScoreCounter] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
+  const pageLimit = 5;
+  const [dailyScores, setDailyScores] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -105,11 +111,12 @@ export default function Dashboard() {
 
       if (!scoreError) {
         setUserScore(scoreData[0]);
+        setDailyScores(scoreData[0]?.daily.reverse() || []);
       }
     };
 
     fetchSession();
-  }, []);
+  }, [scoreCounter]);
 
   const handleLogout = async (e: any) => {
     e.preventDefault();
@@ -131,7 +138,7 @@ export default function Dashboard() {
       const tempDate = new Date();
       tempDate.setDate(tempDate.getDate() - 1);
       const dayBefore = tempDate.toISOString().slice(0, 10);
-      if (JSON.parse(localStorage.getItem("wordle") || "{}") === currDate) {
+      if (JSON.parse(localStorage.getItem("wordle2") || "{}") === currDate) {
         toast.error("You have already scored a Wordle game today.");
         return;
       } else {
@@ -139,9 +146,7 @@ export default function Dashboard() {
         // scoring logic
         const score =
           wordleScores.get(searchQuery.split(" ")[2].split("\n")[0]) ?? 0;
-        const prevHistory = userScore
-          ? JSON.parse(userScore.daily || JSON.stringify([]))
-          : JSON.stringify([]);
+        const prevHistory = userScore ? userScore.daily || [] : [];
         const history = [
           ...prevHistory,
           { game: "Wordle", date: currDate, score: score },
@@ -167,7 +172,7 @@ export default function Dashboard() {
           wordle_tournament: wordleTournament,
           consecutive_wordle: consecutiveWordle,
           total_wordle: totalWordle,
-          daily: JSON.stringify(history),
+          daily: history,
           last_touch_wordle: currDate,
         };
 
@@ -182,6 +187,7 @@ export default function Dashboard() {
             }
             setUserScore(data);
             toast.success("Scored Wordle game");
+            setScoreCounter(scoreCounter + 1);
           });
       }
     } else if (game === "Connections") {
@@ -204,10 +210,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen max-h-screen overflow-hidden   w-full flex-col">
       <Toaster position="top-right" reverseOrder={false} />
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
-        <nav className="hidden flex-col gap-6 w-full text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+      <header className="sticky top-0 flex min-h-16 h-16 items-center gap-4 border-b bg-background px-4 md:px-6">
+        <nav className="hidden flex-col  gap-6 w-full text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link
             href="#"
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
@@ -317,7 +323,7 @@ export default function Dashboard() {
           </DropdownMenu>
         </div>
       </header>
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <main className="flex flex-1  flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -399,113 +405,53 @@ export default function Dashboard() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>
-                      <div className="font-medium">Liam Johnson</div>
-                      <div className="hidden text-sm text-muted-foreground md:inline">
-                        liam@example.com
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      Sale
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      <Badge className="text-xs" variant="outline">
-                        Approved
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                      2023-06-23
-                    </TableCell>
-                    <TableCell className="text-right">$250.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div className="font-medium">Olivia Smith</div>
-                      <div className="hidden text-sm text-muted-foreground md:inline">
-                        olivia@example.com
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      Refund
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      <Badge className="text-xs" variant="outline">
-                        Declined
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                      2023-06-24
-                    </TableCell>
-                    <TableCell className="text-right">$150.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div className="font-medium">Noah Williams</div>
-                      <div className="hidden text-sm text-muted-foreground md:inline">
-                        noah@example.com
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      Subscription
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      <Badge className="text-xs" variant="outline">
-                        Approved
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                      2023-06-25
-                    </TableCell>
-                    <TableCell className="text-right">$350.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div className="font-medium">Emma Brown</div>
-                      <div className="hidden text-sm text-muted-foreground md:inline">
-                        emma@example.com
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      Sale
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      <Badge className="text-xs" variant="outline">
-                        Approved
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                      2023-06-26
-                    </TableCell>
-                    <TableCell className="text-right">$450.00</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>
-                      <div className="font-medium">Liam Johnson</div>
-                      <div className="hidden text-sm text-muted-foreground md:inline">
-                        liam@example.com
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      Sale
-                    </TableCell>
-                    <TableCell className="hidden xl:table-column">
-                      <Badge className="text-xs" variant="outline">
-                        Approved
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                      2023-06-27
-                    </TableCell>
-                    <TableCell className="text-right">$550.00</TableCell>
-                  </TableRow>
+                  {dailyScores
+                    .splice(
+                      (pageNumber - 1) * pageLimit,
+                      pageNumber * pageLimit
+                    )
+                    .map((entry: any, index: any) => (
+                      <React.Fragment key={index}>
+                        <TableRow>
+                          <TableCell>
+                            <div className="font-medium">{entry.game}</div>
+                            <div className="hidden text-sm text-muted-foreground md:inline">
+                              {entry.date}
+                            </div>
+                          </TableCell>
+
+                          <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
+                            2023-06-23
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {" "}
+                            {entry.score}
+                          </TableCell>
+                        </TableRow>
+                      </React.Fragment>
+                    ))}
                 </TableBody>
               </Table>
+              <div className="flex mt-5 justify-end gap-x-1 items-center w-full">
+                <ChevronLeftIcon
+                  className="h-5 w-5 cursor-pointer"
+                  onClick={() => {
+                    setPageNumber(Math.max(1, pageNumber - 1));
+                  }}
+                />
+                <p className="text-sm"> {pageNumber} </p>
+                <ChevronRightIcon
+                  className="h-5 w-5 cursor-pointer"
+                  onClick={() => {
+                    setPageNumber(pageNumber + 1);
+                  }}
+                />
+              </div>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Score a game</CardTitle>
+              <CardTitle>Game Entry</CardTitle>
               <CardDescription>
                 Paste your Wordle or Connections shareable text here
               </CardDescription>
@@ -525,7 +471,9 @@ Wordle 1,009 X/6
 🟩⬜🟨⬜⬜`}
               />
 
-              <Button onClick={scoreGame}>Score</Button>
+              <button onClick={scoreGame} className="button-54" role="button">
+                Score my Game
+              </button>
 
               {/* <div className="flex items-center gap-4">
                 <Avatar className="hidden h-9 w-9 sm:flex">
