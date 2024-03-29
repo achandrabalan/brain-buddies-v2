@@ -21,6 +21,7 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -53,7 +54,7 @@ import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { Toaster } from "react-hot-toast";
-import { wordleScores } from "./utils/constants";
+import { scoreToGrade, wordleScores } from "./utils/constants";
 
 export const description =
   "An application shell with a header and main content area. The header has a navbar, a search input and and a user nav dropdown. The user nav is toggled by a button with an avatar image.";
@@ -111,7 +112,7 @@ export default function Dashboard() {
 
       if (!scoreError) {
         setUserScore(scoreData[0]);
-        setDailyScores(scoreData[0]?.daily.reverse() || []);
+        setDailyScores(scoreData[0]?.daily.toReversed() || []);
       }
     };
 
@@ -205,7 +206,7 @@ export default function Dashboard() {
         );
       }
     } else {
-      toast.error("Unable to parse game. Please try again.");
+      toast.error("Invalid game entry.");
     }
   };
 
@@ -331,9 +332,10 @@ export default function Dashboard() {
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">$45,231.89</div>
+              <div className="text-2xl font-bold">100 wins.</div>
               <p className="text-xs text-muted-foreground">
-                +20.1% from last month
+                {" "}
+                top 20.1% of players
               </p>
             </CardContent>
           </Card>
@@ -406,33 +408,39 @@ export default function Dashboard() {
                 </TableHeader>
                 <TableBody>
                   {dailyScores
-                    .splice(
-                      (pageNumber - 1) * pageLimit,
-                      pageNumber * pageLimit
-                    )
-                    .map((entry: any, index: any) => (
-                      <React.Fragment key={index}>
-                        <TableRow>
-                          <TableCell>
-                            <div className="font-medium">{entry.game}</div>
-                            <div className="hidden text-sm text-muted-foreground md:inline">
-                              {entry.date}
-                            </div>
-                          </TableCell>
+                    .slice((pageNumber - 1) * pageLimit, pageNumber * pageLimit)
+                    .map((entry: any, index: any) => {
+                      const { color, grade } = scoreToGrade(entry.score) as {
+                        color: string;
+                        grade: string;
+                      };
+                      return (
+                        <React.Fragment key={index}>
+                          <TableRow>
+                            <TableCell>
+                              <div className="font-medium">{entry.game}</div>
+                              <div className="hidden text-sm text-muted-foreground md:inline">
+                                {entry.date}
+                              </div>
+                            </TableCell>
 
-                          <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                            2023-06-23
-                          </TableCell>
-                          <TableCell className="text-right">
-                            {" "}
-                            {entry.score}
-                          </TableCell>
-                        </TableRow>
-                      </React.Fragment>
-                    ))}
+                            <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
+                              2023-06-23
+                            </TableCell>
+                            <TableCell
+                              className={`${angkor.className} ${color} text-2xl  font-bold text-right`}
+                            >
+                              {grade}
+                            </TableCell>
+                          </TableRow>
+                        </React.Fragment>
+                      );
+                    })}
                 </TableBody>
               </Table>
-              <div className="flex mt-5 justify-end gap-x-1 items-center w-full">
+            </CardContent>
+            <CardFooter>
+              <div className="flex  gap-x-1 justify-end items-end  w-full">
                 <ChevronLeftIcon
                   className="h-5 w-5 cursor-pointer"
                   onClick={() => {
@@ -447,7 +455,7 @@ export default function Dashboard() {
                   }}
                 />
               </div>
-            </CardContent>
+            </CardFooter>
           </Card>
           <Card>
             <CardHeader>
